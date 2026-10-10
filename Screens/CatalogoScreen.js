@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, StyleSheet,ScrollView } from "react-native";
-
+import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/config";
-
 import Categoria from "../components/Categoria";
 import Producto from "../components/Producto";
 
@@ -14,6 +11,8 @@ const Catalogo = () => {
   const [categorias, setCategorias] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("todos");
+  const [productos, setProductos] = useState([]);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
 
   useEffect(() => {
     obtenerCategorias();
@@ -33,6 +32,7 @@ const Catalogo = () => {
   };
 
   const obtenercategoriaporId = async (categoriaId) => {
+    setCargandoProductos(true);
     try {
       const consulta = query(
         collection(db, "Productos"),
@@ -48,6 +48,8 @@ const Catalogo = () => {
       setProductos(datos);
     } catch (error) {
       console.error("Error obteniendo productos por categoría: ", error);
+    } finally {
+      setCargandoProductos(false);
     }
   };
 
@@ -62,7 +64,6 @@ const Catalogo = () => {
     obtenercategoriaporId(categoriaId);
   };
 
-  const [productos, setProductos] = useState([]);
   useEffect(() => {
     obtenerProductos();
   }, []);
@@ -78,6 +79,7 @@ const Catalogo = () => {
   });
 
   const obtenerProductos = async () => {
+    setCargandoProductos(true);
     try {
       const querySnapshot = await getDocs(collection(db, "Productos"));
       const datos = [];
@@ -87,6 +89,8 @@ const Catalogo = () => {
       setProductos(datos);
     } catch (error) {
       console.error("Error obteniendo productos: ", error);
+    } finally {
+      setCargandoProductos(false);
     }
   };
 
@@ -129,18 +133,27 @@ const Catalogo = () => {
       <View style={styles.linea} />
       <Text style={styles.titulo}>News</Text>
 
-      <View style={styles.productos}>
-        {productosFiltrados.map((producto) => (
-          <Producto
-            key={producto.id}
-            nombre={producto.nombre}
-            precio={producto.precio}
-            imagen={producto.imagen}
-            color={producto.color || "#F4F4F4"}
-            tiempo={producto.tiempo || "Hoy"}
-          />
-        ))}
-      </View>
+      {cargandoProductos ? (
+        <ActivityIndicator
+          accessibilityLabel="Cargando productos"
+          color="#7C7CFF"
+          size="large"
+          style={styles.cargando}
+        />
+      ) : (
+        <View style={styles.productos}>
+          {productosFiltrados.map((producto) => (
+            <Producto
+              key={producto.id}
+              nombre={producto.nombre}
+              precio={producto.precio}
+              imagen={producto.imagen}
+              color={producto.color || "#F4F4F4"}
+              tiempo={producto.tiempo || "Hoy"}
+            />
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -194,6 +207,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     width: "100%",
+  },
+  cargando: {
+    paddingVertical: 48,
   },
 });
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {ActivityIndicator,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 import {addDoc,collection,doc,getDoc,getDocs,updateDoc,} from "firebase/firestore";
 import { db } from "../firebase/config";
 
@@ -9,6 +10,7 @@ const initialValues = {
   nombre: "",
   precio: "",
   imagen: "",
+  tiempo: "",
   descripcion: "",
   color: "#F4F4F4",
   categoriaId: "",
@@ -27,7 +29,7 @@ const NewProducto = ({ navigation, route }) => {
   useEffect(() => {
     const cargarFormulario = async () => {
       try {
-        const categoriasSnapshot = await getDocs(collection(db, "Categorias"));
+        const categoriasSnapshot = await getDocs(collection(db, "categorias"));
         setCategorias(
           categoriasSnapshot.docs.map((categoria) => ({
             id: categoria.id,
@@ -78,6 +80,7 @@ const NewProducto = ({ navigation, route }) => {
       nombre,
       precio,
       imagen: formulario.imagen.trim(),
+      tiempo: formulario.tiempo.trim(),
       descripcion: formulario.descripcion.trim(),
       color: formulario.color.trim() || "#F4F4F4",
       categoriaId: formulario.categoriaId || null,
@@ -146,9 +149,34 @@ const NewProducto = ({ navigation, route }) => {
             returnKeyType="next"
           />
 
+          <Text style={styles.etiqueta}>Categoría</Text>
+          {categorias.length > 0 ? (
+            <View style={styles.selectorContainer}>
+              <Picker
+                selectedValue={formulario.categoriaId || ""}
+                onValueChange={(valor) => cambiarCampo("categoriaId", valor)}
+                mode="dropdown"
+                style={styles.selector}
+              >
+                <Picker.Item label="Selecciona una categoría" value="" />
+                {categorias.map((categoria) => (
+                  <Picker.Item
+                    key={categoria.id}
+                    label={categoria.nombre || "Categoría"}
+                    value={categoria.id}
+                  />
+                ))}
+              </Picker>
+            </View>
+          ) : (
+            <Text style={styles.ayudaCategoria}>
+              No hay categorías disponibles; puedes guardar el producto sin categoría.
+            </Text>
+          )}
+
           <Text style={styles.etiqueta}>Precio *</Text>
           <View style={styles.precioInput}>
-            <Text style={styles.simboloPrecio}>$</Text>
+            <Text style={styles.simboloPrecio}>C$</Text>
             <TextInput
               value={formulario.precio}
               onChangeText={(valor) => cambiarCampo("precio", valor)}
@@ -170,6 +198,25 @@ const NewProducto = ({ navigation, route }) => {
             keyboardType="url"
           />
 
+          <Text style={styles.etiqueta}>Tiempo</Text>
+          <TextInput
+            value={formulario.tiempo}
+            onChangeText={(valor) => cambiarCampo("tiempo", valor)}
+            placeholder="Ej. hace 10 horas"
+            placeholderTextColor="#9B9AAF"
+            style={styles.input}
+          />
+
+          <Text style={styles.etiqueta}>Color</Text>
+          <TextInput
+            value={formulario.color}
+            onChangeText={(valor) => cambiarCampo("color", valor)}
+            placeholder="Ej. #F4F4F4"
+            placeholderTextColor="#9B9AAF"
+            style={styles.input}
+            autoCapitalize="characters"
+          />
+
           <Text style={styles.etiqueta}>Descripción</Text>
           <TextInput
             value={formulario.descripcion}
@@ -181,45 +228,6 @@ const NewProducto = ({ navigation, route }) => {
             textAlignVertical="top"
             maxLength={500}
           />
-
-          <Text style={styles.etiqueta}>Categoría</Text>
-          {categorias.length > 0 ? (
-            <View style={styles.categorias}>
-              {categorias.map((categoria) => {
-                const seleccionada = formulario.categoriaId === categoria.id;
-                return (
-                  <Pressable
-                    key={categoria.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: seleccionada }}
-                    style={[
-                      styles.categoria,
-                      seleccionada && styles.categoriaSeleccionada,
-                    ]}
-                    onPress={() =>
-                      cambiarCampo(
-                        "categoriaId",
-                        seleccionada ? "" : categoria.id,
-                      )
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.textoCategoria,
-                        seleccionada && styles.textoCategoriaSeleccionada,
-                      ]}
-                    >
-                      {categoria.nombre || "Categoría"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
-            <Text style={styles.ayudaCategoria}>
-              No hay categorías disponibles; puedes guardar el producto sin categoría.
-            </Text>
-          )}
 
           <Pressable
             accessibilityRole="button"
@@ -306,18 +314,15 @@ const styles = StyleSheet.create({
   simboloPrecio: { color: "#77768F", fontSize: 15, fontWeight: "700" },
   inputPrecio: { flex: 1, color: "#29283C", fontSize: 14, paddingLeft: 10 },
   inputDescripcion: { minHeight: 94, paddingTop: 13 },
-  categorias: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  categoria: {
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius: 20,
+  selectorContainer: {
+    minHeight: 49,
     backgroundColor: "#FFFFFF",
     borderColor: "#E5E4EF",
     borderWidth: 1,
+    borderRadius: 12,
+    justifyContent: "center",
   },
-  categoriaSeleccionada: { backgroundColor: "#5546D7", borderColor: "#5546D7" },
-  textoCategoria: { color: "#5E5D74", fontSize: 12, fontWeight: "600" },
-  textoCategoriaSeleccionada: { color: "#FFFFFF" },
+  selector: { color: "#29283C" },
   ayudaCategoria: { color: "#77768F", fontSize: 12, lineHeight: 18 },
   error: {
     color: "#B8324A",
